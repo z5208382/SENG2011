@@ -1,4 +1,4 @@
-// Dafny program ex5.dfy compiled into C#
+// Dafny program ex6.dfy compiled into C#
 // To recompile, you will need the libraries
 //     System.Runtime.Numerics.dll System.Collections.Immutable.dll
 // but the 'dotnet' tool in net5.0 should pick those up automatically.
@@ -9,24 +9,32 @@ using System;
 using System.Numerics;
 [assembly: DafnyAssembly.DafnySourceAttribute(@"
 // Dafny 3.2.0.30713
-// Command Line Options: d:\UNI\SENG2011\ex5.dfy /verifyAllModules /compile:3 /spillTargetCode:1 /out:bin\ex5
-// ex5.dfy
+// Command Line Options: d:\UNI\SENG2011\ex6.dfy /verifyAllModules /compile:3 /spillTargetCode:1 /out:bin\ex6
+// ex6.dfy
 
-method tester()
+method Ceiling7(n: nat) returns (k: nat)
+  requires n >= 0
+  ensures k % 7 == 0
+  decreases n
 {
-  var a: array<int> := new int[] [3, 3, 1, 0, 0, 0];
-  assert a[0] == 3 && a[1] == 3 && a[2] == 1 && a[3] == 0 && a[4] == 0 && a[5] == 0;
-  assert exist1(a, 3);
+  var i := 0;
+  var j := 0;
+  while i <= n
+    invariant j % 7 == 0
+    decreases n - i
+  {
+    if i % 7 == 0 {
+      j := i;
+    }
+    i := i + 1;
+  }
+  return j;
 }
 
-predicate exist1(a: array<int>, x: int)
-  reads a
-  decreases {a}, a, x
+method Main()
 {
-  exists i: int :: 
-    0 <= i < a.Length &&
-    a[i] == x &&
-    !exists j: int :: i < j < a.Length && a[j] == x
+  var test := Ceiling7(43);
+  print test;
 }
 ")]
 
@@ -1765,17 +1773,35 @@ namespace _System {
 namespace _module {
 
   public partial class __default {
-    public static void tester()
+    public static BigInteger Ceiling7(BigInteger n)
     {
-      BigInteger[] _28_a;
-      BigInteger[] _nw0 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(6), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
-      _nw0[(int)(0)] = new BigInteger(3);
-      _nw0[(int)(1)] = new BigInteger(3);
-      _nw0[(int)(2)] = BigInteger.One;
-      _nw0[(int)(3)] = BigInteger.Zero;
-      _nw0[(int)(4)] = BigInteger.Zero;
-      _nw0[(int)(5)] = BigInteger.Zero;
-      _28_a = _nw0;
+      BigInteger k = BigInteger.Zero;
+      BigInteger _15_i;
+      _15_i = BigInteger.Zero;
+      BigInteger _16_j;
+      _16_j = BigInteger.Zero;
+      while ((_15_i) <= (n)) {
+        if ((Dafny.Helpers.EuclideanModulus(_15_i, new BigInteger(7))).Sign == 0) {
+          _16_j = _15_i;
+        }
+        _15_i = (_15_i) + (BigInteger.One);
+      }
+      k = _16_j;
+      return k;
+      return k;
+    }
+    public static void _Main()
+    {
+      BigInteger _17_test;
+      BigInteger _out0;
+      _out0 = __default.Ceiling7(new BigInteger(43));
+      _17_test = _out0;
+      Dafny.Helpers.Print(_17_test);
     }
   }
 } // end of namespace _module
+class __CallToMain {
+  public static void Main(string[] args) {
+    Dafny.Helpers.WithHaltHandling(_module.__default._Main);
+  }
+}
