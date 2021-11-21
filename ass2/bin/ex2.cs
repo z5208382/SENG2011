@@ -1,4 +1,4 @@
-// Dafny program test.dfy compiled into C#
+// Dafny program ex2.dfy compiled into C#
 // To recompile, you will need the libraries
 //     System.Runtime.Numerics.dll System.Collections.Immutable.dll
 // but the 'dotnet' tool in net5.0 should pick those up automatically.
@@ -7,48 +7,119 @@
 
 using System;
 using System.Numerics;
-[assembly: DafnyAssembly.DafnySourceAttribute(@"
-// Dafny 3.2.0.30713
-// Command Line Options: d:\UNI\SENG2011\test.dfy /verifyAllModules /compile:3 /spillTargetCode:1 /out:bin\test
-// test.dfy
+[assembly: DafnyAssembly.DafnySourceAttribute(@"// Dafny 3.3.0.31104
+// Command Line Options: d:\UNI\SENG2011\ass2\ex2.dfy /verifyAllModules /spillTargetCode:1 /compile:3 /out:bin\ex2
+// ex2.dfy
 
-datatype Tree<T> = Leaf(T) | Node1(T, Tree<T>) | Node2(T, Tree<T>, Tree<T>)
-
-method Print(t: Tree<int>)
-  decreases t
+predicate sorted(a: array<int>, low: int, high: int)
+  requires 0 <= low <= high <= a.Length
+  reads a
+  decreases {a}, a, low, high
 {
-  match t
-  case {:split false} Leaf(n) =>
-    print n, ' ';
-  case {:split false} Node1(n, l) =>
+  forall j: int, k: int :: 
+    low <= j < k < high ==>
+      a[j] <= a[k]
+}
+
+predicate isSeclar(a: array<int>, seclar: int)
+  reads a
+  decreases {a}, a, seclar
+{
+  exists i: int | 0 <= i < a.Length - 1 :: 
+    forall j: int :: 
+      0 <= j < i ==>
+        (a[j] <= seclar || a[j] == a[i]) &&
+        a[i] == seclar
+}
+
+method SecondLargest(a: array<int>) returns (seclar: int)
+  requires a.Length >= 2
+  modifies a
+  ensures multiset(a[..]) == multiset(old(a[..]))
+  ensures sorted(a, 0, a.Length)
+  ensures seclar <= a[a.Length - 1] && isSeclar(a, seclar)
+  ensures exists j: int | 0 <= j < a.Length - 1 :: a[j] == seclar
+  decreases a
+{
+  var up := 1;
+  while up < a.Length
+    invariant 1 <= up <= a.Length
+    invariant sorted(a, 0, up)
+    invariant multiset(a[..]) == multiset(old(a[..]))
+    decreases a.Length - up
+  {
+    var down := up;
+    while down >= 1 && a[down - 1] > a[down]
+      invariant 0 <= down <= up
+      invariant forall i: int, j: int :: 0 <= i < j <= up && j != down ==> a[i] <= a[j]
+      invariant multiset(a[..]) == multiset(old(a[..]))
+      decreases down - 1, if down >= 1 then a[down - 1] - a[down] else 0 - 1
     {
-      Print(l);
-      print n, ' ';
+      a[down - 1], a[down] := a[down], a[down - 1];
+      down := down - 1;
     }
-  case {:split false} Node2(n, l, r) =>
-    {
-      Print(l);
-      print n, ' ';
-      Print(r);
+    up := up + 1;
+  }
+  var i := a.Length - 2;
+  var sLargest := a[i];
+  while i >= 0
+    invariant sLargest <= a[a.Length - 1] && exists i: int | 0 <= i < a.Length :: forall j: int :: 0 <= j < i ==> a[j] <= a[i] && a[i] == sLargest
+    invariant exists j: int | 0 <= j < a.Length - 1 :: a[j] == sLargest
+    decreases i - 0
+  {
+    if a[i] != a[a.Length - 1] {
+      var sLargest := a[i];
+      return sLargest;
     }
+    i := i - 1;
+  }
+  return sLargest;
 }
 
 method Main()
 {
-  var leaf1: Tree<int> := Leaf(1);
-  var leaf2: Tree<int> := Leaf(2);
-  var leaf3: Tree<int> := Leaf(3);
-  var leaf4: Tree<int> := Leaf(4);
-  var t5: Tree<int> := Node2(5, leaf1, leaf2);
-  var t6: Tree<int> := Node2(6, leaf3, leaf4);
-  var t7: Tree<int> := Node2(7, t5, t6);
-  Print(t7);
-  print '\n';
+  var a: array<int> := new int[5];
+  a[0] := 18181;
+  a[1] := 81;
+  a[2] := 1;
+  a[3] := 1818;
+  a[4] := 818;
+  assert a[..] == [18181, 81, 1, 1818, 818];
+  ghost var ms := multiset(a[..]);
+  var b := SecondLargest(a);
+  assert sorted(a, 0, a.Length);
+  assert ms == multiset(a[..]);
+  assert a[..] == [1, 81, 818, 1818, 18181];
+  print ""sorted array "", a[..], '\n';
+  assert isSeclar(a, 1818);
+  assert isSeclar(a, b);
+  var a1 := new int[] [2, 42];
+  var b1 := SecondLargest(a1);
+  print b1;
+  var a2 := new int[] [2, 42, -4];
+  var b2 := SecondLargest(a2);
+  print b2;
+  var a3 := new int[] [42, 42, 42, 42, 42, 42, 42];
+  var b3 := SecondLargest(a3);
+  print b3;
+  var a4 := new int[] [102, 103, 104];
+  var b4 := SecondLargest(a4);
+  print b4;
+  var a5 := new int[] [-4, 2];
+  var b5 := SecondLargest(a5);
+  print b5;
+  var a6 := new int[] [0, 0, 0, 0, 0, 0];
+  var b6 := SecondLargest(a6);
+  print b6;
 }
 ")]
 
+//-----------------------------------------------------------------------------
+//
 // Copyright by the contributors to the Dafny Project
 // SPDX-License-Identifier: MIT
+//
+//-----------------------------------------------------------------------------
 
 #if ISDAFNYRUNTIMELIB
 using System; // for Func
@@ -63,14 +134,12 @@ namespace DafnyAssembly {
   }
 }
 
-namespace Dafny
-{
+namespace Dafny {
   using System.Collections.Generic;
   using System.Collections.Immutable;
   using System.Linq;
 
-  public interface ISet<out T>
-  {
+  public interface ISet<out T> {
     int Count { get; }
     long LongCount { get; }
     IEnumerable<T> Elements { get; }
@@ -80,14 +149,14 @@ namespace Dafny
     ISet<U> DowncastClone<U>(Func<T, U> converter);
   }
 
-  public class Set<T> : ISet<T>
-  {
+  public class Set<T> : ISet<T> {
     readonly ImmutableHashSet<T> setImpl;
     readonly bool containsNull;
     Set(ImmutableHashSet<T> d, bool containsNull) {
       this.setImpl = d;
       this.containsNull = containsNull;
     }
+
     public static readonly ISet<T> Empty = new Set<T>(ImmutableHashSet<T>.Empty, false);
 
     private static readonly TypeDescriptor<ISet<T>> _TYPE = new Dafny.TypeDescriptor<ISet<T>>(Empty);
@@ -102,6 +171,7 @@ namespace Dafny
     public static Set<T> FromISet(ISet<T> s) {
       return s as Set<T> ?? FromCollection(s.Elements);
     }
+
     public static Set<T> FromCollection(IEnumerable<T> values) {
       var d = ImmutableHashSet<T>.Empty.ToBuilder();
       var containsNull = false;
@@ -112,8 +182,10 @@ namespace Dafny
           d.Add(t);
         }
       }
+
       return new Set<T>(d.ToImmutable(), containsNull);
     }
+
     public static ISet<T> FromCollectionPlusOne(IEnumerable<T> values, T oneMoreValue) {
       var d = ImmutableHashSet<T>.Empty.ToBuilder();
       var containsNull = false;
@@ -122,6 +194,7 @@ namespace Dafny
       } else {
         d.Add(oneMoreValue);
       }
+
       foreach (T t in values) {
         if (t == null) {
           containsNull = true;
@@ -129,8 +202,10 @@ namespace Dafny
           d.Add(t);
         }
       }
+
       return new Set<T>(d.ToImmutable(), containsNull);
     }
+
     public ISet<U> DowncastClone<U>(Func<T, U> converter) {
       if (this is ISet<U> th) {
         return th;
@@ -140,20 +215,25 @@ namespace Dafny
           var u = converter(t);
           d.Add(u);
         }
+
         return new Set<U>(d.ToImmutable(), this.containsNull);
       }
     }
+
     public int Count {
       get { return this.setImpl.Count + (containsNull ? 1 : 0); }
     }
+
     public long LongCount {
       get { return this.setImpl.Count + (containsNull ? 1 : 0); }
     }
+
     public IEnumerable<T> Elements {
       get {
         if (containsNull) {
           yield return default(T);
         }
+
         foreach (var t in this.setImpl) {
           yield return t;
         }
@@ -178,38 +258,46 @@ namespace Dafny
           if (containsNull) {
             yield return new Set<T>(ihs, true);
           }
+
           // "add 1" to "which", as if doing a carry chain.  For every digit changed, change the membership of the corresponding element in "s".
           int i = 0;
           for (; i < n && which[i]; i++) {
             which[i] = false;
             s.Remove(elmts[i]);
           }
+
           if (i == n) {
             // we have cycled through all the subsets
             break;
           }
+
           which[i] = true;
           s.Add(elmts[i]);
         }
       }
     }
+
     public bool Equals(ISet<T> other) {
       if (other == null || Count != other.Count) {
         return false;
       } else if (this == other) {
         return true;
       }
+
       foreach (var elmt in Elements) {
         if (!other.Contains(elmt)) {
           return false;
         }
       }
+
       return true;
     }
+
     public override bool Equals(object other) {
       if (other is ISet<T>) {
         return Equals((ISet<T>)other);
       }
+
       var th = this as ISet<object>;
       var oth = other as ISet<object>;
       if (th != null && oth != null) {
@@ -241,11 +329,14 @@ namespace Dafny
       if (containsNull) {
         hashCode = hashCode * (Dafny.Helpers.GetHashCode(default(T)) + 3);
       }
+
       foreach (var t in this.setImpl) {
         hashCode = hashCode * (Dafny.Helpers.GetHashCode(t) + 3);
       }
+
       return hashCode;
     }
+
     public override string ToString() {
       var s = "{";
       var sep = "";
@@ -253,10 +344,12 @@ namespace Dafny
         s += sep + Dafny.Helpers.ToString(default(T));
         sep = ", ";
       }
+
       foreach (var t in this.setImpl) {
         s += sep + Dafny.Helpers.ToString(t);
         sep = ", ";
       }
+
       return s + "}";
     }
     public static bool IsProperSubsetOf(ISet<T> th, ISet<T> other) {
@@ -307,8 +400,7 @@ namespace Dafny
     }
   }
 
-  public interface IMultiSet<out T>
-  {
+  public interface IMultiSet<out T> {
     bool IsEmpty { get; }
     int Count { get; }
     long LongCount { get; }
@@ -321,8 +413,7 @@ namespace Dafny
     IMultiSet<U> DowncastClone<U>(Func<T, U> converter);
   }
 
-  public class MultiSet<T> : IMultiSet<T>
-  {
+  public class MultiSet<T> : IMultiSet<T> {
     readonly ImmutableDictionary<T, BigInteger> dict;
     readonly BigInteger occurrencesOfNull;  // stupidly, a Dictionary in .NET cannot use "null" as a key
     MultiSet(ImmutableDictionary<T, BigInteger>.Builder d, BigInteger occurrencesOfNull) {
@@ -355,6 +446,7 @@ namespace Dafny
       }
       return new MultiSet<T>(d, occurrencesOfNull);
     }
+
     public static MultiSet<T> FromCollection(IEnumerable<T> values) {
       var d = ImmutableDictionary<T, BigInteger>.Empty.ToBuilder();
       var occurrencesOfNull = BigInteger.Zero;
@@ -363,14 +455,19 @@ namespace Dafny
           occurrencesOfNull++;
         } else {
           BigInteger i;
-          if (!d.TryGetValue(t, out i)) {
+          if (!d.TryGetValue(t,
+            out i)) {
             i = BigInteger.Zero;
           }
+
           d[t] = i + 1;
         }
       }
-      return new MultiSet<T>(d, occurrencesOfNull);
+
+      return new MultiSet<T>(d,
+        occurrencesOfNull);
     }
+
     public static MultiSet<T> FromSeq(ISequence<T> values) {
       var d = ImmutableDictionary<T, BigInteger>.Empty.ToBuilder();
       var occurrencesOfNull = BigInteger.Zero;
@@ -379,13 +476,17 @@ namespace Dafny
           occurrencesOfNull++;
         } else {
           BigInteger i;
-          if (!d.TryGetValue(t, out i)) {
+          if (!d.TryGetValue(t,
+            out i)) {
             i = BigInteger.Zero;
           }
+
           d[t] = i + 1;
         }
       }
-      return new MultiSet<T>(d, occurrencesOfNull);
+
+      return new MultiSet<T>(d,
+        occurrencesOfNull);
     }
     public static MultiSet<T> FromSet(ISet<T> values) {
       var d = ImmutableDictionary<T, BigInteger>.Empty.ToBuilder();
@@ -478,8 +579,14 @@ namespace Dafny
         return false;
       }
       foreach (T t in a.dict.Keys) {
-        if (!b.dict.ContainsKey(t) || b.dict[t] < a.dict[t]) {
-          return false;
+        if (b.dict.ContainsKey(t)) {
+          if (b.dict[t] < a.dict[t]) {
+            return false;
+          }
+        } else {
+          if (a.dict[t] != BigInteger.Zero) {
+            return false;
+          }
         }
       }
       return true;
@@ -494,7 +601,7 @@ namespace Dafny
     }
 
     public bool Contains<G>(G t) {
-      return t == null ? occurrencesOfNull > 0 : t is T && dict.ContainsKey((T)(object)t);
+      return Select(t) != 0;
     }
     public BigInteger Select<G>(G t) {
       if (t == null) {
@@ -613,14 +720,15 @@ namespace Dafny
           yield return default(T);
         }
         foreach (var key in dict.Keys) {
-          yield return key;
+          if (dict[key] != 0) {
+            yield return key;
+          }
         }
       }
     }
   }
 
-  public interface IMap<out U, out V>
-  {
+  public interface IMap<out U, out V> {
     int Count { get; }
     long LongCount { get; }
     ISet<U> Keys { get; }
@@ -634,8 +742,7 @@ namespace Dafny
     IMap<UU, VV> DowncastClone<UU, VV>(Func<U, UU> keyConverter, Func<V, VV> valueConverter);
   }
 
-  public class Map<U, V> : IMap<U, V>
-  {
+  public class Map<U, V> : IMap<U, V> {
     readonly ImmutableDictionary<U, V> dict;
     readonly bool hasNullKey;  // true when "null" is a key of the Map
     readonly V nullValue;  // if "hasNullKey", the value that "null" maps to
@@ -888,8 +995,7 @@ namespace Dafny
     ISequence<U> DowncastClone<U>(Func<T, U> converter);
   }
 
-  public abstract class Sequence<T> : ISequence<T>
-  {
+  public abstract class Sequence<T> : ISequence<T> {
     public static readonly ISequence<T> Empty = new ArraySequence<T>(new T[0]);
 
     private static readonly TypeDescriptor<ISequence<T>> _TYPE = new Dafny.TypeDescriptor<ISequence<T>>(Empty);
@@ -965,7 +1071,7 @@ namespace Dafny
     // Make Count a public abstract instead of LongCount, since the "array size is limited to a total of 4 billion
     // elements, and to a maximum index of 0X7FEFFFFF". Therefore, as a protection, limit this to int32.
     // https://docs.microsoft.com/en-us/dotnet/api/system.array
-    public abstract int Count  { get; }
+    public abstract int Count { get; }
     public long LongCount {
       get { return Count; }
     }
@@ -974,8 +1080,7 @@ namespace Dafny
     // that resolve this.
     protected abstract ImmutableArray<T> ImmutableElements { get; }
 
-    public T[] Elements
-    {
+    public T[] Elements {
       get { return ImmutableElements.ToArray(); }
     }
     public IEnumerable<T> UniqueElements {
@@ -1077,8 +1182,7 @@ namespace Dafny
     public ISequence<T> Take(BigInteger n) {
       return Take((long)n);
     }
-    public ISequence<T> Drop(long m)
-    {
+    public ISequence<T> Drop(long m) {
       int startingElement = checked((int)m);
       if (startingElement == 0)
         return this;
@@ -1099,7 +1203,7 @@ namespace Dafny
       if (lo == 0 && hi == ImmutableElements.Length) {
         return this;
       }
-      int startingIndex = checked((int) lo);
+      int startingIndex = checked((int)lo);
       int endingIndex = checked((int)hi);
       var length = endingIndex - startingIndex;
       T[] tmp = new T[length];
@@ -1131,6 +1235,7 @@ namespace Dafny
       return Subsequence((long)lo, (long)hi);
     }
   }
+
   internal class ArraySequence<T> : Sequence<T> {
     private readonly ImmutableArray<T> elmts;
 
@@ -1142,8 +1247,7 @@ namespace Dafny
     }
 
     protected override ImmutableArray<T> ImmutableElements {
-      get
-      {
+      get {
         return elmts;
       }
     }
@@ -1153,6 +1257,7 @@ namespace Dafny
       }
     }
   }
+
   internal class ConcatSequence<T> : Sequence<T> {
     // INVARIANT: Either left != null, right != null, and elmts's underlying array == null or
     // left == null, right == null, and elmts's underlying array != null
@@ -1209,13 +1314,12 @@ namespace Dafny
     }
   }
 
-  public interface IPair<out A, out B>
-  {
+  public interface IPair<out A, out B> {
     A Car { get; }
     B Cdr { get; }
   }
-  public class Pair<A, B> : IPair<A, B>
-  {
+
+  public class Pair<A, B> : IPair<A, B> {
     private A car;
     private B cdr;
     public A Car { get { return car; } }
@@ -1226,8 +1330,7 @@ namespace Dafny
     }
   }
 
-  public class TypeDescriptor<T>
-  {
+  public class TypeDescriptor<T> {
     private readonly T initValue;
     public TypeDescriptor(T initValue) {
       this.initValue = initValue;
@@ -1237,8 +1340,7 @@ namespace Dafny
     }
   }
 
-  public partial class Helpers
-  {
+  public partial class Helpers {
     public static int GetHashCode<G>(G g) {
       return g == null ? 1001 : g.GetHashCode();
     }
@@ -1309,14 +1411,14 @@ namespace Dafny
     }
     public static IEnumerable<BigInteger> AllIntegers() {
       yield return new BigInteger(0);
-      for (var j = new BigInteger(1);; j++) {
+      for (var j = new BigInteger(1); ; j++) {
         yield return j;
         yield return -j;
       }
     }
     public static IEnumerable<BigInteger> IntegerRange(Nullable<BigInteger> lo, Nullable<BigInteger> hi) {
       if (lo == null) {
-        for (var j = (BigInteger)hi; true; ) {
+        for (var j = (BigInteger)hi; true;) {
           j--;
           yield return j;
         }
@@ -1456,12 +1558,11 @@ namespace Dafny
     // In .NET version 4.5, it is possible to mark a method with "AggressiveInlining", which says to inline the
     // method if possible.  Method "ExpressionSequence" would be a good candidate for it:
     // [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static U ExpressionSequence<T, U>(T t, U u)
-    {
+    public static U ExpressionSequence<T, U>(T t, U u) {
       return u;
     }
 
-    public static U Let<T, U>(T t, Func<T,U> f) {
+    public static U Let<T, U>(T t, Func<T, U> f) {
       return f(t);
     }
 
@@ -1493,8 +1594,7 @@ namespace Dafny
     }
   }
 
-  public struct BigRational
-  {
+  public struct BigRational {
     public static readonly BigRational ZERO = new BigRational(0);
 
     // We need to deal with the special case "num == 0 && den == 0", because
@@ -1659,15 +1759,13 @@ namespace Dafny
   }
 
   public class HaltException : Exception {
-    public HaltException(object message) : base(message.ToString())
-    {
+    public HaltException(object message) : base(message.ToString()) {
     }
   }
 }
 
-namespace @_System
-{
-  public class Tuple2<T0,T1> {
+namespace @_System {
+  public class Tuple2<T0, T1> {
     public readonly T0 _0;
     public readonly T1 _1;
     public Tuple2(T0 _0, T1 _1) {
@@ -1675,7 +1773,7 @@ namespace @_System
       this._1 = _1;
     }
     public override bool Equals(object other) {
-      var oth = other as _System.Tuple2<T0,T1>;
+      var oth = other as _System.Tuple2<T0, T1>;
       return oth != null && object.Equals(this._0, oth._0) && object.Equals(this._1, oth._1);
     }
     public override int GetHashCode() {
@@ -1683,7 +1781,7 @@ namespace @_System
       hash = ((hash << 5) + hash) + 0;
       hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._0));
       hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._1));
-      return (int) hash;
+      return (int)hash;
     }
     public override string ToString() {
       string s = "";
@@ -1694,14 +1792,14 @@ namespace @_System
       s += ")";
       return s;
     }
-    public static Tuple2<T0,T1> Default(T0 _default_T0, T1 _default_T1) {
+    public static Tuple2<T0, T1> Default(T0 _default_T0, T1 _default_T1) {
       return create(_default_T0, _default_T1);
     }
     public static Dafny.TypeDescriptor<_System.Tuple2<T0, T1>> _TypeDescriptor(Dafny.TypeDescriptor<T0> _td_T0, Dafny.TypeDescriptor<T1> _td_T1) {
       return new Dafny.TypeDescriptor<_System.Tuple2<T0, T1>>(_System.Tuple2<T0, T1>.Default(_td_T0.Default(), _td_T1.Default()));
     }
-    public static Tuple2<T0,T1> create(T0 _0, T1 _1) {
-      return new Tuple2<T0,T1>(_0, _1);
+    public static Tuple2<T0, T1> create(T0 _0, T1 _1) {
+      return new Tuple2<T0, T1>(_0, _1);
     }
     public bool is____hMake2 { get { return true; } }
     public T0 dtor__0 {
@@ -1781,170 +1879,134 @@ namespace _System {
 } // end of namespace _System
 namespace _module {
 
-  public abstract class Tree<T> {
-    public Tree() { }
-    public static Tree<T> Default(T _default_T) {
-      return create_Leaf(_default_T);
-    }
-    public static Dafny.TypeDescriptor<Tree<T>> _TypeDescriptor(Dafny.TypeDescriptor<T> _td_T) {
-      return new Dafny.TypeDescriptor<Tree<T>>(Tree<T>.Default(_td_T.Default()));
-    }
-    public static Tree<T> create_Leaf(T _a0) {
-      return new Tree_Leaf<T>(_a0);
-    }
-    public static Tree<T> create_Node1(T _a0, Tree<T> _a1) {
-      return new Tree_Node1<T>(_a0, _a1);
-    }
-    public static Tree<T> create_Node2(T _a0, Tree<T> _a1, Tree<T> _a2) {
-      return new Tree_Node2<T>(_a0, _a1, _a2);
-    }
-    public bool is_Leaf { get { return this is Tree_Leaf<T>; } }
-    public bool is_Node1 { get { return this is Tree_Node1<T>; } }
-    public bool is_Node2 { get { return this is Tree_Node2<T>; } }
-  }
-  public class Tree_Leaf<T> : Tree<T> {
-    public readonly T _a0;
-    public Tree_Leaf(T _a0) {
-      this._a0 = _a0;
-    }
-    public override bool Equals(object other) {
-      var oth = other as Tree_Leaf<T>;
-      return oth != null && object.Equals(this._a0, oth._a0);
-    }
-    public override int GetHashCode() {
-      ulong hash = 5381;
-      hash = ((hash << 5) + hash) + 0;
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a0));
-      return (int) hash;
-    }
-    public override string ToString() {
-      string s = "Tree.Leaf";
-      s += "(";
-      s += Dafny.Helpers.ToString(this._a0);
-      s += ")";
-      return s;
-    }
-  }
-  public class Tree_Node1<T> : Tree<T> {
-    public readonly T _a0;
-    public readonly Tree<T> _a1;
-    public Tree_Node1(T _a0, Tree<T> _a1) {
-      this._a0 = _a0;
-      this._a1 = _a1;
-    }
-    public override bool Equals(object other) {
-      var oth = other as Tree_Node1<T>;
-      return oth != null && object.Equals(this._a0, oth._a0) && object.Equals(this._a1, oth._a1);
-    }
-    public override int GetHashCode() {
-      ulong hash = 5381;
-      hash = ((hash << 5) + hash) + 1;
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a0));
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a1));
-      return (int) hash;
-    }
-    public override string ToString() {
-      string s = "Tree.Node1";
-      s += "(";
-      s += Dafny.Helpers.ToString(this._a0);
-      s += ", ";
-      s += Dafny.Helpers.ToString(this._a1);
-      s += ")";
-      return s;
-    }
-  }
-  public class Tree_Node2<T> : Tree<T> {
-    public readonly T _a0;
-    public readonly Tree<T> _a1;
-    public readonly Tree<T> _a2;
-    public Tree_Node2(T _a0, Tree<T> _a1, Tree<T> _a2) {
-      this._a0 = _a0;
-      this._a1 = _a1;
-      this._a2 = _a2;
-    }
-    public override bool Equals(object other) {
-      var oth = other as Tree_Node2<T>;
-      return oth != null && object.Equals(this._a0, oth._a0) && object.Equals(this._a1, oth._a1) && object.Equals(this._a2, oth._a2);
-    }
-    public override int GetHashCode() {
-      ulong hash = 5381;
-      hash = ((hash << 5) + hash) + 2;
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a0));
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a1));
-      hash = ((hash << 5) + hash) + ((ulong)Dafny.Helpers.GetHashCode(this._a2));
-      return (int) hash;
-    }
-    public override string ToString() {
-      string s = "Tree.Node2";
-      s += "(";
-      s += Dafny.Helpers.ToString(this._a0);
-      s += ", ";
-      s += Dafny.Helpers.ToString(this._a1);
-      s += ", ";
-      s += Dafny.Helpers.ToString(this._a2);
-      s += ")";
-      return s;
-    }
-  }
-
   public partial class __default {
-    public static void Print(Tree<BigInteger> t)
+    public static BigInteger SecondLargest(BigInteger[] a)
     {
-      Tree<BigInteger> _source0 = t;
-      if (_source0.is_Leaf) {
-        BigInteger _33___mcc_h0 = ((Tree_Leaf<BigInteger>)_source0)._a0;
-        {
-          BigInteger _34_n = _33___mcc_h0;
-          Dafny.Helpers.Print(_34_n);
-          Dafny.Helpers.Print(' ');
+      BigInteger seclar = BigInteger.Zero;
+      BigInteger _112_up;
+      _112_up = BigInteger.One;
+      while ((_112_up) < (new BigInteger((a).Length))) {
+        BigInteger _113_down;
+        _113_down = _112_up;
+        while (((_113_down) >= (BigInteger.One)) && (((a)[(int)((_113_down) - (BigInteger.One))]) > ((a)[(int)(_113_down)]))) {
+          var _index0 = (_113_down) - (BigInteger.One);
+          BigInteger _rhs0 = (a)[(int)(_113_down)];
+          BigInteger _rhs1 = (a)[(int)((_113_down) - (BigInteger.One))];
+          BigInteger[] _lhs0 = a;
+          BigInteger _lhs1 = (_113_down) - (BigInteger.One);
+          BigInteger[] _lhs2 = a;
+          BigInteger _lhs3 = _113_down;
+          _lhs0[(int)(_lhs1)] = _rhs0;
+          _lhs2[(int)(_lhs3)] = _rhs1;
+          _113_down = (_113_down) - (BigInteger.One);
         }
-      } else if (_source0.is_Node1) {
-        BigInteger _35___mcc_h1 = ((Tree_Node1<BigInteger>)_source0)._a0;
-        Tree<BigInteger> _36___mcc_h2 = ((Tree_Node1<BigInteger>)_source0)._a1;
-        {
-          Tree<BigInteger> _37_l = _36___mcc_h2;
-          BigInteger _38_n = _35___mcc_h1;
-          {
-            __default.Print(_37_l);
-            Dafny.Helpers.Print(_38_n);
-            Dafny.Helpers.Print(' ');
-          }
-        }
-      } else {
-        BigInteger _39___mcc_h3 = ((Tree_Node2<BigInteger>)_source0)._a0;
-        Tree<BigInteger> _40___mcc_h4 = ((Tree_Node2<BigInteger>)_source0)._a1;
-        Tree<BigInteger> _41___mcc_h5 = ((Tree_Node2<BigInteger>)_source0)._a2;
-        {
-          Tree<BigInteger> _42_r = _41___mcc_h5;
-          Tree<BigInteger> _43_l = _40___mcc_h4;
-          BigInteger _44_n = _39___mcc_h3;
-          {
-            __default.Print(_43_l);
-            Dafny.Helpers.Print(_44_n);
-            Dafny.Helpers.Print(' ');
-            __default.Print(_42_r);
-          }
-        }
+        _112_up = (_112_up) + (BigInteger.One);
       }
+      BigInteger _114_i;
+      _114_i = (new BigInteger((a).Length)) - (new BigInteger(2));
+      BigInteger _115_sLargest;
+      _115_sLargest = (a)[(int)(_114_i)];
+      while ((_114_i).Sign != -1) {
+        if (((a)[(int)(_114_i)]) != ((a)[(int)((new BigInteger((a).Length)) - (BigInteger.One))])) {
+          BigInteger _116_sLargest;
+          _116_sLargest = (a)[(int)(_114_i)];
+          seclar = _116_sLargest;
+          return seclar;
+        }
+        _114_i = (_114_i) - (BigInteger.One);
+      }
+      seclar = _115_sLargest;
+      return seclar;
+      return seclar;
     }
     public static void _Main()
     {
-      Tree<BigInteger> _45_leaf1;
-      _45_leaf1 = @Tree<BigInteger>.create_Leaf(BigInteger.One);
-      Tree<BigInteger> _46_leaf2;
-      _46_leaf2 = @Tree<BigInteger>.create_Leaf(new BigInteger(2));
-      Tree<BigInteger> _47_leaf3;
-      _47_leaf3 = @Tree<BigInteger>.create_Leaf(new BigInteger(3));
-      Tree<BigInteger> _48_leaf4;
-      _48_leaf4 = @Tree<BigInteger>.create_Leaf(new BigInteger(4));
-      Tree<BigInteger> _49_t5;
-      _49_t5 = @Tree<BigInteger>.create_Node2(new BigInteger(5), _45_leaf1, _46_leaf2);
-      Tree<BigInteger> _50_t6;
-      _50_t6 = @Tree<BigInteger>.create_Node2(new BigInteger(6), _47_leaf3, _48_leaf4);
-      Tree<BigInteger> _51_t7;
-      _51_t7 = @Tree<BigInteger>.create_Node2(new BigInteger(7), _49_t5, _50_t6);
-      __default.Print(_51_t7);
+      BigInteger[] _117_a;
+      BigInteger[] _nw0 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(5), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _117_a = _nw0;
+      (_117_a)[(int)((BigInteger.Zero))] = new BigInteger(18181);
+      (_117_a)[(int)((BigInteger.One))] = new BigInteger(81);
+      (_117_a)[(int)((new BigInteger(2)))] = BigInteger.One;
+      (_117_a)[(int)((new BigInteger(3)))] = new BigInteger(1818);
+      (_117_a)[(int)((new BigInteger(4)))] = new BigInteger(818);
+      BigInteger _118_b;
+      BigInteger _out0;
+      _out0 = __default.SecondLargest(_117_a);
+      _118_b = _out0;
+      Dafny.Helpers.Print(Dafny.Sequence<char>.FromString("sorted array "));
+      Dafny.Helpers.Print(Dafny.Helpers.SeqFromArray(_117_a));
       Dafny.Helpers.Print('\n');
+      BigInteger[] _119_a1;
+      BigInteger[] _nw1 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(2), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw1[(int)(0)] = new BigInteger(2);
+      _nw1[(int)(1)] = new BigInteger(42);
+      _119_a1 = _nw1;
+      BigInteger _120_b1;
+      BigInteger _out1;
+      _out1 = __default.SecondLargest(_119_a1);
+      _120_b1 = _out1;
+      Dafny.Helpers.Print(_120_b1);
+      BigInteger[] _121_a2;
+      BigInteger[] _nw2 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(3), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw2[(int)(0)] = new BigInteger(2);
+      _nw2[(int)(1)] = new BigInteger(42);
+      _nw2[(int)(2)] = new BigInteger(-4);
+      _121_a2 = _nw2;
+      BigInteger _122_b2;
+      BigInteger _out2;
+      _out2 = __default.SecondLargest(_121_a2);
+      _122_b2 = _out2;
+      Dafny.Helpers.Print(_122_b2);
+      BigInteger[] _123_a3;
+      BigInteger[] _nw3 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(7), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw3[(int)(0)] = new BigInteger(42);
+      _nw3[(int)(1)] = new BigInteger(42);
+      _nw3[(int)(2)] = new BigInteger(42);
+      _nw3[(int)(3)] = new BigInteger(42);
+      _nw3[(int)(4)] = new BigInteger(42);
+      _nw3[(int)(5)] = new BigInteger(42);
+      _nw3[(int)(6)] = new BigInteger(42);
+      _123_a3 = _nw3;
+      BigInteger _124_b3;
+      BigInteger _out3;
+      _out3 = __default.SecondLargest(_123_a3);
+      _124_b3 = _out3;
+      Dafny.Helpers.Print(_124_b3);
+      BigInteger[] _125_a4;
+      BigInteger[] _nw4 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(3), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw4[(int)(0)] = new BigInteger(102);
+      _nw4[(int)(1)] = new BigInteger(103);
+      _nw4[(int)(2)] = new BigInteger(104);
+      _125_a4 = _nw4;
+      BigInteger _126_b4;
+      BigInteger _out4;
+      _out4 = __default.SecondLargest(_125_a4);
+      _126_b4 = _out4;
+      Dafny.Helpers.Print(_126_b4);
+      BigInteger[] _127_a5;
+      BigInteger[] _nw5 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(2), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw5[(int)(0)] = new BigInteger(-4);
+      _nw5[(int)(1)] = new BigInteger(2);
+      _127_a5 = _nw5;
+      BigInteger _128_b5;
+      BigInteger _out5;
+      _out5 = __default.SecondLargest(_127_a5);
+      _128_b5 = _out5;
+      Dafny.Helpers.Print(_128_b5);
+      BigInteger[] _129_a6;
+      BigInteger[] _nw6 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(6), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
+      _nw6[(int)(0)] = BigInteger.Zero;
+      _nw6[(int)(1)] = BigInteger.Zero;
+      _nw6[(int)(2)] = BigInteger.Zero;
+      _nw6[(int)(3)] = BigInteger.Zero;
+      _nw6[(int)(4)] = BigInteger.Zero;
+      _nw6[(int)(5)] = BigInteger.Zero;
+      _129_a6 = _nw6;
+      BigInteger _130_b6;
+      BigInteger _out6;
+      _out6 = __default.SecondLargest(_129_a6);
+      _130_b6 = _out6;
+      Dafny.Helpers.Print(_130_b6);
     }
   }
 } // end of namespace _module
