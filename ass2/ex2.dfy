@@ -3,15 +3,15 @@ predicate sorted(a: array<int>, low:int, high:int) reads a
 { forall j,k:: low<=j<k<high ==> a[j]<=a[k] }
 
 predicate isSeclar(a:array<int>, seclar:int) reads a
-  requires sorted(a, 0, a.Length)
 {
-  exists i | 0 <= i < a.Length :: forall j :: 0 <= j < a.Length ==> a[j] <= seclar || a[j] == a[i]
+  exists i | 0 <= i < a.Length :: forall j :: 0 <= j < a.Length ==> a[j] <= a[i] || a[j] == a[i]
 }
 
 method SecondLargest(a:array<int>) returns (seclar:int) modifies a
 requires a.Length >= 2;
 ensures multiset(a[..]) == multiset(old(a[..]));
 ensures sorted(a,0,a.Length);
+//ensures exists i | 0 <= i < a.Length :: forall j :: 0 <= j < a.Length ==> a[j] <= seclar || a[j] == a[i];
 ensures isSeclar(a, seclar);
 ensures exists j | 0 <= j < a.Length-1 :: a[j] == seclar;
 {
@@ -34,9 +34,9 @@ ensures exists j | 0 <= j < a.Length-1 :: a[j] == seclar;
   }
 
   var i := a.Length-2;
-  var sLargest := a[i];
+  var sLargest := a[a.Length-1];
   while(i >= 0)
-  invariant exists j | 0 <= j < a.Length-1 :: a[j] == sLargest;
+  invariant exists i | 0 <= i < a.Length :: forall j :: 0 <= j < a.Length ==> a[j] <= a[i] || a[j] == a[i];
   {
     if(a[i] != a[a.Length - 1]) {
       var sLargest := a[i];
@@ -51,8 +51,8 @@ method Main()
 {
 
   var a1:= new int[][2,42];
-  var b1:= SecondLargest(a1);
-  assert isSeclar(a,2);
+  assert a1[0] == 2 && a1[1] == 42;
+  var b1 := SecondLargest(a1);
   print b1;
 
   // var a2:= new int[][2,42,-4];

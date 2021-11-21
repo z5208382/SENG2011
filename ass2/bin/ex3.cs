@@ -1,4 +1,4 @@
-// Dafny program ex2.dfy compiled into C#
+// Dafny program ex3.dfy compiled into C#
 // To recompile, you will need the libraries
 //     System.Runtime.Numerics.dll System.Collections.Immutable.dll
 // but the 'dotnet' tool in net5.0 should pick those up automatically.
@@ -8,77 +8,25 @@
 using System;
 using System.Numerics;
 [assembly: DafnyAssembly.DafnySourceAttribute(@"// Dafny 3.3.0.31104
-// Command Line Options: d:\UNI\SENG2011\ass2\ex2.dfy /verifyAllModules /spillTargetCode:1 /compile:3 /out:bin\ex2
-// ex2.dfy
+// Command Line Options: d:\UNI\SENG2011\ass2\ex3.dfy /verifyAllModules /spillTargetCode:1 /compile:3 /out:bin\ex3
+// ex3.dfy
 
-predicate sorted(a: array<int>, low: int, high: int)
-  requires 0 <= low <= high <= a.Length
-  reads a
-  decreases {a}, a, low, high
+predicate ooo(s: seq<int>)
+  requires |s| >= 2
+  decreases s
 {
-  forall j: int, k: int :: 
-    low <= j < k < high ==>
-      a[j] <= a[k]
-}
-
-predicate isSeclar(a: array<int>, seclar: int)
-  reads a
-  decreases {a}, a, seclar
-{
-  exists i: int :: 
-    forall j: int :: 
-      0 <= j <= i < a.Length &&
-      (a[j] <= seclar || a[j] == a[i])
-}
-
-method SecondLargest(a: array<int>) returns (seclar: int)
-  requires a.Length >= 2
-  modifies a
-  ensures multiset(a[..]) == multiset(old(a[..]))
-  ensures sorted(a, 0, a.Length)
-  ensures exists j: int | 0 <= j < a.Length - 1 :: a[j] == seclar
-  decreases a
-{
-  var up := 1;
-  while up < a.Length
-    invariant 1 <= up <= a.Length
-    invariant sorted(a, 0, up)
-    invariant multiset(a[..]) == multiset(old(a[..]))
-    decreases a.Length - up
-  {
-    var down := up;
-    while down >= 1 && a[down - 1] > a[down]
-      invariant 0 <= down <= up
-      invariant forall i: int, j: int :: 0 <= i < j <= up && j != down ==> a[i] <= a[j]
-      invariant multiset(a[..]) == multiset(old(a[..]))
-      decreases down - 1, if down >= 1 then a[down - 1] - a[down] else 0 - 1
-    {
-      a[down - 1], a[down] := a[down], a[down - 1];
-      down := down - 1;
-    }
-    up := up + 1;
-  }
-  var i := a.Length - 2;
-  var sLargest := a[i];
-  while i >= 0
-    invariant exists j: int | 0 <= j < a.Length - 1 :: a[j] == sLargest
-    decreases i - 0
-  {
-    if a[i] != a[a.Length - 1] {
-      var sLargest := a[i];
-      return sLargest;
-    }
-    i := i - 1;
-  }
-  return sLargest;
+  exists i: int | 0 <= i < |s| :: 
+    if i == 0 then s[i] !in s[i + 1 .. |s|] else s[i] !in s[0 .. i] + s[i + 1 .. |s|]
 }
 
 method Main()
 {
-  var a1 := new int[] [2, 42];
-  assert a1[0] == 2 && a1[1] == 42;
-  var b1 := SecondLargest(a1);
-  print b1;
+  var s := [1, 1, 42, 1];
+  assert s[0] == 1 && s[1] == 1 && s[2] == 42 && s[3] == 1;
+  assert ooo(s);
+  var s1 := [1, 1, 42, 42];
+  assert s1[0] == 1 && s1[1] == 1 && s1[2] == 42 && s1[3] == 42;
+  assert !ooo(s1);
 }
 ")]
 
@@ -1848,57 +1796,12 @@ namespace _System {
 namespace _module {
 
   public partial class __default {
-    public static BigInteger SecondLargest(BigInteger[] a)
-    {
-      BigInteger seclar = BigInteger.Zero;
-      BigInteger _70_up;
-      _70_up = BigInteger.One;
-      while ((_70_up) < (new BigInteger((a).Length))) {
-        BigInteger _71_down;
-        _71_down = _70_up;
-        while (((_71_down) >= (BigInteger.One)) && (((a)[(int)((_71_down) - (BigInteger.One))]) > ((a)[(int)(_71_down)]))) {
-          var _index0 = (_71_down) - (BigInteger.One);
-          BigInteger _rhs0 = (a)[(int)(_71_down)];
-          BigInteger _rhs1 = (a)[(int)((_71_down) - (BigInteger.One))];
-          BigInteger[] _lhs0 = a;
-          BigInteger _lhs1 = (_71_down) - (BigInteger.One);
-          BigInteger[] _lhs2 = a;
-          BigInteger _lhs3 = _71_down;
-          _lhs0[(int)(_lhs1)] = _rhs0;
-          _lhs2[(int)(_lhs3)] = _rhs1;
-          _71_down = (_71_down) - (BigInteger.One);
-        }
-        _70_up = (_70_up) + (BigInteger.One);
-      }
-      BigInteger _72_i;
-      _72_i = (new BigInteger((a).Length)) - (new BigInteger(2));
-      BigInteger _73_sLargest;
-      _73_sLargest = (a)[(int)(_72_i)];
-      while ((_72_i).Sign != -1) {
-        if (((a)[(int)(_72_i)]) != ((a)[(int)((new BigInteger((a).Length)) - (BigInteger.One))])) {
-          BigInteger _74_sLargest;
-          _74_sLargest = (a)[(int)(_72_i)];
-          seclar = _74_sLargest;
-          return seclar;
-        }
-        _72_i = (_72_i) - (BigInteger.One);
-      }
-      seclar = _73_sLargest;
-      return seclar;
-      return seclar;
-    }
     public static void _Main()
     {
-      BigInteger[] _75_a1;
-      BigInteger[] _nw0 = new BigInteger[Dafny.Helpers.ToIntChecked(Dafny.Helpers.ToIntChecked(new BigInteger(2), "C# arrays may not be larger than the max 32-bit integer"),"C# array size must not be larger than max 32-bit int")];
-      _nw0[(int)(0)] = new BigInteger(2);
-      _nw0[(int)(1)] = new BigInteger(42);
-      _75_a1 = _nw0;
-      BigInteger _76_b1;
-      BigInteger _out0;
-      _out0 = __default.SecondLargest(_75_a1);
-      _76_b1 = _out0;
-      Dafny.Helpers.Print(_76_b1);
+      Dafny.ISequence<BigInteger> _19_s;
+      _19_s = Dafny.Sequence<BigInteger>.FromElements(BigInteger.One, BigInteger.One, new BigInteger(42), BigInteger.One);
+      Dafny.ISequence<BigInteger> _20_s1;
+      _20_s1 = Dafny.Sequence<BigInteger>.FromElements(BigInteger.One, BigInteger.One, new BigInteger(42), new BigInteger(42));
     }
   }
 } // end of namespace _module
