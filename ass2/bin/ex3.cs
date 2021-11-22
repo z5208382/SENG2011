@@ -19,7 +19,7 @@ predicate ooo(s: seq<int>)
     if i == 0 then s[i] !in s[i + 1 .. |s|] else s[i] !in s[0 .. i] + s[i + 1 .. |s|]
 }
 
-method Main()
+method Testerooo()
 {
   var s := [1, 1, 42, 1];
   assert s[0] == 1 && s[1] == 1 && s[2] == 42 && s[3] == 1;
@@ -1796,7 +1796,7 @@ namespace _System {
 namespace _module {
 
   public partial class __default {
-    public static void _Main()
+    public static void Testerooo()
     {
       Dafny.ISequence<BigInteger> _19_s;
       _19_s = Dafny.Sequence<BigInteger>.FromElements(BigInteger.One, BigInteger.One, new BigInteger(42), BigInteger.One);
@@ -1805,8 +1805,3 @@ namespace _module {
     }
   }
 } // end of namespace _module
-class __CallToMain {
-  public static void Main(string[] args) {
-    Dafny.Helpers.WithHaltHandling(_module.__default._Main);
-  }
-}

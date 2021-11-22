@@ -13,8 +13,9 @@ ensures (n * (n+1)) % 2 == 0; // what we are trying to prove
   }
 }
 
-function LemCNNTester(n:nat):nat
-requires n >= 0;
+method LemCNNTester()
 {
-  (n * (n+1)) % 2
+  var n : nat;
+  LemCNN(n);
+  assert (n * (n+1)) % 2 == 0;
 }

@@ -28,11 +28,11 @@ lemma {:induction false} LemCNN(n: nat)
   }
 }
 
-function LemCNNTester(n: nat): nat
-  requires n >= 0
-  decreases n
+method LemCNNTester()
 {
-  n * (n + 1) % 2
+  var n: nat;
+  LemCNN(n);
+  assert n * (n + 1) % 2 == 0;
 }
 ")]
 
@@ -1801,4 +1801,10 @@ namespace _System {
 } // end of namespace _System
 namespace _module {
 
+  public partial class __default {
+    public static void LemCNNTester()
+    {
+      BigInteger _13_n = BigInteger.Zero;
+    }
+  }
 } // end of namespace _module
